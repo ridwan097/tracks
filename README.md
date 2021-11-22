@@ -17,3 +17,5 @@ run ngrok 3000
 After this, past the first, left forwarding link into the tracker.js file as baseUrl
 
 You are good to go 👍🏾
+
+## To run without mocklocations, comment out import (first line) of TrackCreateScreen.js
