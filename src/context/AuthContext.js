@@ -1,35 +1,45 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createDataContext from './createDataContext';
 import trackerApi from '../api/tracker';
-import {navigate} from '../navigationRef';
+import { navigate } from '../navigationRef';
 
 const authReducer = (state, action) => {
   switch (action.type) {
     case 'add_error':
-      return {...state, errorMessage: action.payload};
+      return { ...state, errorMessage: action.payload };
     case 'signin':
-      return {errorMessage: '', token: action.payload};
-
+      return { errorMessage: '', token: action.payload };
     case 'clear_error_message':
-      return {...state, errorMessage: ''};
-
+      return { ...state, errorMessage: '' };
     case 'signout':
-      return {token: null, errorMessage: ''};
+      return { token: null, errorMessage: '' };
     default:
       return state;
   }
 };
 
-const signup = (dispatch) => {
-  return async ({email, password}) => {
-    try {
-      const response = await trackerApi.post('/signup', {email, password});
-      await AsyncStorage.setItem('token', response?.data?.token);
+const tryLocalSignin = (dispatch) => async () => {
+  const token = await AsyncStorage.getItem('token');
+  if (token) {
+    dispatch({ type: 'signin', payload: token });
+    navigate('TrackList');
+  } else {
+    navigate('Signup');
+  }
+};
 
-      dispatch({
-        type: 'signin',
-        payload: response.data.token,
-      });
+const clearErrorMessage = (dispatch) => () => {
+  dispatch({ type: 'clear_error_message' });
+};
+
+const signup =
+  (dispatch) =>
+  async ({ email, password }) => {
+    try {
+      const response = await trackerApi.post('/signup', { email, password });
+      await AsyncStorage.setItem('token', response.data.token);
+      dispatch({ type: 'signin', payload: response.data.token });
+
       navigate('TrackList');
     } catch (err) {
       dispatch({
@@ -38,32 +48,14 @@ const signup = (dispatch) => {
       });
     }
   };
-};
-
-const tryLocalSignin = (dispatch) => async () => {
-  const token = await AsyncStorage.getItem('token');
-  if (token) {
-    dispatch({type: 'signin', payload: token});
-    navigate('TrackList');
-  } else {
-    navigate('loginFlow');
-  }
-};
-
-const clearErrorMesssage = (dispatch) => () => {
-  dispatch({type: 'clear_error_message'});
-};
 
 const signin =
   (dispatch) =>
-  async ({email, password}) => {
+  async ({ email, password }) => {
     try {
-      const response = await trackerApi.post('/signin', {email, password});
-      await AsyncStorage.setItem('token', response?.data?.token);
-      dispatch({
-        type: 'signin',
-        payload: response.data.token,
-      });
+      const response = await trackerApi.post('/signin', { email, password });
+      await AsyncStorage.setItem('token', response.data.token);
+      dispatch({ type: 'signin', payload: response.data.token });
       navigate('TrackList');
     } catch (err) {
       dispatch({
@@ -75,14 +67,12 @@ const signin =
 
 const signout = (dispatch) => async () => {
   await AsyncStorage.removeItem('token');
-  dispatch({
-    type: 'signout',
-  });
+  dispatch({ type: 'signout' });
   navigate('loginFlow');
 };
 
-export const {Provider, Context} = createDataContext(
+export const { Provider, Context } = createDataContext(
   authReducer,
-  {signin, signout, signup, clearErrorMesssage, tryLocalSignin},
-  {token: null, errorMessage: ''},
+  { signin, signout, signup, clearErrorMessage, tryLocalSignin },
+  { token: null, errorMessage: '' },
 );
